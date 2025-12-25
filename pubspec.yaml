@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   cupertino_icons: ^1.0.6
   
   # 状态管理
@@ -22,6 +25,7 @@ dependencies:
   shared_preferences: ^2.2.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  path_provider: ^2.1.2
   
   # 定位与地图
   geolocator: ^11.0.0
@@ -55,3 +59,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true  # 启用l10n代码生成
