@@ -1,71 +1,80 @@
 import 'package:flutter/material.dart';
-import '../../core/services/sync_service.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/sync_provider.dart';
 
-class SyncStatusWidget extends StatefulWidget {
+class SyncStatusWidget extends StatelessWidget {
   const SyncStatusWidget({super.key});
 
   @override
-  State<SyncStatusWidget> createState() => _SyncStatusWidgetState();
-}
-
-class _SyncStatusWidgetState extends State<SyncStatusWidget> {
-  final SyncService _syncService = SyncService();
-  Map<String, int> _unsyncedCount = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUnsyncedCount();
-  }
-
-  Future<void> _loadUnsyncedCount() async {
-    final count = await _syncService.getUnsyncedCount();
-    if (mounted) {
-      setState(() => _unsyncedCount = count);
-    }
-  }
-
-  Future<void> _handleSync() async {
-    await _syncService.manualSync();
-    await _loadUnsyncedCount();
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('同步完成')),
-      );
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final total = _unsyncedCount['total'] ?? 0;
-    final isSyncing = _syncService.isSyncing;
+    return Consumer<SyncProvider>(
+      builder: (context, syncProvider, _) {
+        final isSyncing = syncProvider.isSyncing;
+        final total = syncProvider.totalUnsynced;
+        final errorMessage = syncProvider.errorMessage;
 
-    if (total == 0 && !isSyncing) {
-      return const SizedBox.shrink();
-    }
+        // 没有未同步数据且不在同步中
+        if (total == 0 && !isSyncing && errorMessage == null) {
+          return const SizedBox.shrink();
+        }
 
-    return Card(
-      margin: const EdgeInsets.all(16),
-      color: Colors.orange[50],
-      child: ListTile(
-        leading: isSyncing
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(Icons.cloud_upload, color: Colors.orange[700]),
-        title: Text(
-          isSyncing ? '正在同步...' : '有 $total 条数据待同步',
-        ),
-        trailing: isSyncing
-            ? null
-            : TextButton(
-                onPressed: _handleSync,
-                child: const Text('立即同步'),
+        // 显示错误
+        if (errorMessage != null) {
+          return Card(
+            margin: const EdgeInsets.all(16),
+            color: Colors.red[50],
+            child: ListTile(
+              leading: Icon(Icons.error, color: Colors.red[700]),
+              title: const Text('同步失败'),
+              subtitle: Text(errorMessage),
+              trailing: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: syncProvider.clearError,
               ),
-      ),
+            ),
+          );
+        }
+
+        // 同步中或有未同步数据
+        return Card(
+          margin: const EdgeInsets.all(16),
+          color: isSyncing ? Colors.blue[50] : Colors.orange[50],
+          child: ListTile(
+            leading: isSyncing
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.blue[700],
+                    ),
+                  )
+                : Icon(Icons.cloud_upload, color: Colors.orange[700]),
+            title: Text(
+              isSyncing ? '正在同步数据...' : '有 $total 条数据待同步',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: isSyncing
+                ? const Text('请保持网络连接')
+                : const Text('连接网络后将自动同步'),
+            trailing: isSyncing
+                ? null
+                : FutureBuilder<bool>(
+                    future: syncProvider.hasNetwork(),
+                    builder: (context, snapshot) {
+                      final hasNet = snapshot.data ?? false;
+                      return TextButton.icon(
+                        onPressed: hasNet
+                            ? () => syncProvider.manualSync()
+                            : null,
+                        icon: const Icon(Icons.sync, size: 18),
+                        label: Text(hasNet ? '立即同步' : '无网络'),
+                      );
+                    },
+                  ),
+          ),
+        );
+      },
     );
   }
 }
