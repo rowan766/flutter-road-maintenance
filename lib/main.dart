@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/sync_service.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/inspection/presentation/pages/inspection_page.dart';
@@ -12,6 +13,7 @@ import 'features/inspection/data/services/background_tracking_service.dart';
 import 'features/maintenance/domain/models/maintenance_task.dart';
 import 'features/maintenance/presentation/pages/maintenance_page.dart';
 import 'features/report/presentation/pages/report_page.dart';
+import 'shared/widgets/sync_status_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +31,9 @@ void main() async {
   
   // 初始化后台服务
   await BackgroundTrackingService().initialize();
+  
+  // 初始化同步服务
+  await SyncService().initialize();
   
   runApp(const MyApp());
 }
@@ -75,6 +80,18 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('公路养护'),
         actions: [
+          // 同步按钮
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () async {
+              await SyncService().manualSync();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('同步完成')),
+                );
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -86,41 +103,51 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          _buildMenuCard(
-            context,
-            icon: Icons.map,
-            title: '道路巡查',
-            subtitle: '轨迹记录',
-            color: Colors.blue,
-            onTap: () => Navigator.pushNamed(context, '/inspection'),
-          ),
-          _buildMenuCard(
-            context,
-            icon: Icons.camera_alt,
-            title: '病害记录',
-            subtitle: '拍照上报',
-            color: Colors.red,
-            onTap: () => Navigator.pushNamed(context, '/defect-record'),
-          ),
-          _buildMenuCard(
-            context,
-            icon: Icons.build,
-            title: '养护管理',
-            subtitle: '任务分配',
-            color: Colors.green,
-            onTap: () => Navigator.pushNamed(context, '/maintenance'),
-          ),
-          _buildMenuCard(
-            context,
-            icon: Icons.bar_chart,
-            title: '统计报表',
-            subtitle: '数据分析',
-            color: Colors.orange,
-            onTap: () => Navigator.pushNamed(context, '/report'),
+          // 同步状态提示
+          const SyncStatusWidget(),
+          
+          // 主菜单
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildMenuCard(
+                  context,
+                  icon: Icons.map,
+                  title: '道路巡查',
+                  subtitle: '轨迹记录',
+                  color: Colors.blue,
+                  onTap: () => Navigator.pushNamed(context, '/inspection'),
+                ),
+                _buildMenuCard(
+                  context,
+                  icon: Icons.camera_alt,
+                  title: '病害记录',
+                  subtitle: '拍照上报',
+                  color: Colors.red,
+                  onTap: () => Navigator.pushNamed(context, '/defect-record'),
+                ),
+                _buildMenuCard(
+                  context,
+                  icon: Icons.build,
+                  title: '养护管理',
+                  subtitle: '任务分配',
+                  color: Colors.green,
+                  onTap: () => Navigator.pushNamed(context, '/maintenance'),
+                ),
+                _buildMenuCard(
+                  context,
+                  icon: Icons.bar_chart,
+                  title: '统计报表',
+                  subtitle: '数据分析',
+                  color: Colors.orange,
+                  onTap: () => Navigator.pushNamed(context, '/report'),
+                ),
+              ],
+            ),
           ),
         ],
       ),
