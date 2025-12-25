@@ -63,16 +63,64 @@
   - 上传本地数据到服务器
   - 下载服务器更新到本地
 
+#### 7. HarmonyOS适配 🎯
+- ✅ **平台检测**：自动识别HarmonyOS设备
+- ✅ **平台适配器**：统一API抽象平台差异
+- ✅ **UI自适应**：
+  - HarmonyOS大圆角设计
+  - 平台标识显示
+  - 响应式布局
+- ✅ **开发文档**：完整HarmonyOS适配指南
+- ✅ **代码就绪**：预留HarmonyOS分支逻辑
+- ⏳ **待测试**：需HarmonyOS环境真机验证
+
+## 平台支持
+
+### 🎯 多平台兼容
+
+| 平台 | 开发状态 | 测试状态 | 发布状态 |
+|------|---------|---------|---------|
+| **Android** | ✅ 完成 | ✅ 已测试 | ✅ 可发布 |
+| **iOS** | ✅ 完成 | ✅ 已测试 | ✅ 可发布 |
+| **HarmonyOS** | ✅ 代码就绪 | ⏳ 待测试 | ⏳ 需OHOS环境 |
+
+### 📱 HarmonyOS适配说明
+
+**当前状态：方案B - 平台检测 + 条件适配**
+
+```
+✅ 已完成：
+- 平台检测器（自动识别鸿蒙设备）
+- 平台适配器（统一API）
+- UI自适应（鸿蒙设计规范）
+- 条件编译预留
+
+⏳ 需要时：
+- 切换到Flutter OHOS分支
+- 安装DevEco Studio
+- 真机编译测试
+- 打包.hap文件
+```
+
+详见：[docs/HARMONYOS_GUIDE.md](docs/HARMONYOS_GUIDE.md)
+
 ## 技术架构
 
 ```
 lib/
 ├── core/                      # 核心模块
 │   ├── config/               # 配置
+│   │   └── app_config.dart   # API配置（Mock开关）
 │   ├── theme/                # 主题
 │   ├── routes/               # 路由
+│   ├── platform/             # 平台适配 🆕
+│   │   ├── platform_detector.dart  # 平台检测
+│   │   └── platform_adapter.dart   # 平台适配器
 │   ├── services/             # 服务
-│   │   └── sync_service.dart # 同步服务
+│   │   ├── sync_service.dart       # 同步服务
+│   │   ├── mock_api_service.dart   # Mock API
+│   │   ├── real_api_service.dart   # 真实API
+│   │   └── api_service_factory.dart# API工厂
 │   └── providers/            # 全局Provider
 │       └── sync_provider.dart# 同步状态管理
 ├── features/                 # 功能模块
@@ -85,52 +133,39 @@ lib/
         └── sync_status_widget.dart # 同步状态UI
 ```
 
-## 离线同步机制
+## 核心技术
 
-### 工作流程
-
-```
-用户操作（拍照/记录）
-        ↓
-保存到本地Hive（synced=false）
-        ↓
-SyncService检测网络
-        ↓
-    有网络？
-      / \
-    是   否
-    /     \
-   ↓       ↓
-自动同步  等待网络
-服务器
-   ↓
-标记synced=true
-```
-
-### 核心特性
-
-| 特性 | 说明 |
-|------|------|
-| **离线优先** | 所有操作先保存本地，不依赖网络 |
-| **自动同步** | 网络恢复时自动上传 |
-| **定时同步** | 每5分钟自动检查并同步 |
-| **手动同步** | 用户可主动触发同步 |
-| **状态提示** | 实时显示同步状态和未同步数量 |
-
-详见：[docs/OFFLINE_SYNC.md](docs/OFFLINE_SYNC.md)
+| 功能 | 技术方案 | 平台支持 |
+|------|---------|---------|
+| 状态管理 | Provider | ✅ 全平台 |
+| 定位服务 | 高德地图SDK | Android/iOS |
+| 后台任务 | flutter_background_service | Android/iOS |
+| 轨迹纠偏 | Geolocator + 自定义算法 | ✅ 全平台 |
+| 本地存储 | Hive + SharedPreferences | ✅ 全平台 |
+| 数据同步 | connectivity_plus + Dio | ✅ 全平台 |
+| 图片处理 | image_picker | 需平台适配 |
+| 数据可视化 | fl_chart | ✅ 全平台 |
+| 平台检测 | 自定义PlatformDetector | ✅ 全平台 |
 
 ## 快速开始
 
 ### 1. 环境要求
 - Flutter SDK >= 3.0.0
 - Dart >= 3.0.0
-- 高德地图API Key
+- 高德地图API Key（Android/iOS）
 
-### 2. 配置高德Key
+### 2. 克隆项目
+
+```bash
+git clone https://github.com/rowan766/flutter-road-maintenance.git
+cd flutter-road-maintenance
+```
+
+### 3. 配置高德Key
 
 详见 [docs/MAP_SETUP.md](docs/MAP_SETUP.md)
 
-### 3. 安装依赖
+### 4. 安装依赖
 
 ```bash
 flutter pub get
@@ -139,7 +174,7 @@ flutter pub get
 flutter packages pub run build_runner build
 ```
 
-### 4. 运行
+### 5. 运行
 
 ```bash
 # Android
@@ -147,20 +182,22 @@ flutter run -d android
 
 # iOS (需要真机)
 flutter run -d ios
+
+# HarmonyOS (需要OHOS环境)
+# 详见 docs/HARMONYOS_GUIDE.md
 ```
 
-## 核心技术
+## 平台特性对比
 
-| 功能 | 技术方案 |
-|------|---------|
-| 状态管理 | Provider |
-| 定位服务 | 高德地图SDK |
-| 后台任务 | flutter_background_service |
-| 轨迹纠偏 | Geolocator + 自定义算法 |
-| 本地存储 | Hive + SharedPreferences |
-| 数据同步 | connectivity_plus + Dio |
-| 图片处理 | image_picker |
-| 数据可视化 | fl_chart |
+### Android vs iOS vs HarmonyOS
+
+| 特性 | Android | iOS | HarmonyOS |
+|------|---------|-----|-----------|
+| **圆角设计** | 8dp | 10pt | 16vp（更大）|
+| **阴影** | elevation 4 | shadow 1 | elevation 2 |
+| **图片选择** | 需要权限 | 需要权限 | System Picker无需权限 |
+| **文件存储** | /data/data/... | Documents/ | /data/storage/... |
+| **最大图片** | 5MB | 5MB | 10MB（推荐）|
 
 ## 使用场景
 
@@ -174,6 +211,8 @@ flutter run -d ios
 数据保存到本地（synced=false）
   ↓
 继续工作，不受网络影响
+  ↓
+平台自动适配（Android/iOS/HarmonyOS）
 ```
 
 ### 场景2：回到办公室（有网）
@@ -189,17 +228,7 @@ SyncService检测到网络
   ↓
 本地标记synced=true
   ↓
-同步完成
-```
-
-### 场景3：多人协作
-
-```
-A用户创建任务（有网）→ 上传服务器
-  ↓
-B用户打开APP（有网）→ 自动下载
-  ↓
-B用户收到新任务通知
+同步完成（全平台）
 ```
 
 ## 数据模型
@@ -238,8 +267,8 @@ assignee, createdAt  # 负责人、时间
 - [x] 任务状态跟踪
 - [x] 统计报表分析
 - [x] 离线数据同步 ⭐
-- [ ] 服务端API对接
-- [ ] HarmonyOS适配
+- [ ] 服务端API对接（Mock已就绪）
+- [x] HarmonyOS适配（代码就绪，待环境测试）✅
 - [ ] 多语言支持
 
 ## 文档
@@ -247,15 +276,29 @@ assignee, createdAt  # 负责人、时间
 - 📖 [快速开始](docs/QUICK_START.md)
 - 🗺️ [地图配置](docs/MAP_SETUP.md)
 - 🔄 [离线同步](docs/OFFLINE_SYNC.md)
+- 📱 [HarmonyOS适配](docs/HARMONYOS_GUIDE.md) 🆕
+- 🔌 [API对接](docs/API_INTEGRATION.md)
+- 📋 [API规范](docs/API_SPEC.md)
 
 ## 注意事项
 
+### 通用
+1. ✅ 生成Hive适配器后才能运行
+2. ✅ 首次运行需要授予位置、相机、网络权限
+3. ⭐ **离线工作完全支持，有网时自动同步**
+
+### Android
 1. ✅ 确保已申请高德地图Key
-2. ✅ Android需要打包签名才能正常定位
-3. ✅ iOS需要真机调试
-4. ✅ 首次运行需要授予位置、相机、网络权限
-5. ✅ 生成Hive适配器后才能运行
-6. ⭐ **离线工作完全支持，有网时自动同步**
+2. ✅ 需要打包签名才能正常定位
+
+### iOS
+1. ✅ 需要真机调试
+2. ✅ 需要配置高德地图Key
+
+### HarmonyOS
+1. ⏳ 当前代码已适配，可在Android运行
+2. ⏳ 需要DevEco Studio环境才能编译鸿蒙版
+3. ⏳ 详见 [HarmonyOS适配指南](docs/HARMONYOS_GUIDE.md)
 
 ## License
 
