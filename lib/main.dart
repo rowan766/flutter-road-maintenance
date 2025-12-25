@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/theme/app_theme.dart';
-import 'core/services/sync_service.dart';
+import 'core/providers/sync_provider.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/inspection/presentation/pages/inspection_page.dart';
@@ -32,9 +32,6 @@ void main() async {
   // 初始化后台服务
   await BackgroundTrackingService().initialize();
   
-  // 初始化同步服务
-  await SyncService().initialize();
-  
   runApp(const MyApp());
 }
 
@@ -46,6 +43,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()..loadUser()),
+        ChangeNotifierProvider(create: (_) => SyncProvider()..initialize()),
       ],
       child: MaterialApp(
         title: '公路养护',
@@ -81,15 +79,51 @@ class HomePage extends StatelessWidget {
         title: const Text('公路养护'),
         actions: [
           // 同步按钮
-          IconButton(
-            icon: const Icon(Icons.sync),
-            onPressed: () async {
-              await SyncService().manualSync();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('同步完成')),
-                );
-              }
+          Consumer<SyncProvider>(
+            builder: (context, syncProvider, _) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: syncProvider.isSyncing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.sync),
+                    onPressed: syncProvider.isSyncing
+                        ? null
+                        : () => syncProvider.manualSync(),
+                  ),
+                  if (syncProvider.totalUnsynced > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '${syncProvider.totalUnsynced}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
             },
           ),
           IconButton(
