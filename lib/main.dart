@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/sync_provider.dart';
+import 'core/providers/locale_provider.dart';
 import 'core/platform/platform_detector.dart';
 import 'core/platform/platform_adapter.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
@@ -15,6 +18,7 @@ import 'features/inspection/data/services/background_tracking_service.dart';
 import 'features/maintenance/domain/models/maintenance_task.dart';
 import 'features/maintenance/presentation/pages/maintenance_page.dart';
 import 'features/report/presentation/pages/report_page.dart';
+import 'features/settings/presentation/pages/settings_page.dart';
 import 'shared/widgets/sync_status_widget.dart';
 
 void main() async {
@@ -50,25 +54,43 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()..loadUser()),
         ChangeNotifierProvider(create: (_) => SyncProvider()..initialize()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()..loadLocale()),
       ],
-      child: MaterialApp(
-        title: '公路养护',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        home: Consumer<AuthProvider>(
-          builder: (context, auth, _) {
-            return auth.isAuthenticated 
-                ? const HomePage() 
-                : const LoginPage();
-          },
-        ),
-        routes: {
-          '/login': (context) => const LoginPage(),
-          '/home': (context) => const HomePage(),
-          '/inspection': (context) => const InspectionPage(),
-          '/defect-record': (context) => const DefectRecordPage(),
-          '/maintenance': (context) => const MaintenancePage(),
-          '/report': (context) => const ReportPage(),
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, _) {
+          return MaterialApp(
+            title: 'Road Maintenance',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            // 国际化配置
+            locale: localeProvider.locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('zh'), // 中文
+              Locale('en'), // 英文
+            ],
+            home: Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                return auth.isAuthenticated 
+                    ? const HomePage() 
+                    : const LoginPage();
+              },
+            ),
+            routes: {
+              '/login': (context) => const LoginPage(),
+              '/home': (context) => const HomePage(),
+              '/inspection': (context) => const InspectionPage(),
+              '/defect-record': (context) => const DefectRecordPage(),
+              '/maintenance': (context) => const MaintenancePage(),
+              '/report': (context) => const ReportPage(),
+              '/settings': (context) => const SettingsPage(),
+            },
+          );
         },
       ),
     );
@@ -80,7 +102,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 获取平台适配的UI配置
+    final l10n = AppLocalizations.of(context)!;
     final uiConfig = PlatformAdapter().getUIConfig();
     final borderRadius = uiConfig['borderRadius'] ?? 8.0;
     
@@ -88,8 +110,7 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            const Text('公路养护'),
-            // 显示平台标识（调试用）
+            Text(l10n.home_title),
             if (PlatformDetector.isHarmonyOS)
               Container(
                 margin: const EdgeInsets.only(left: 8),
@@ -106,6 +127,11 @@ class HomePage extends StatelessWidget {
           ],
         ),
         actions: [
+          // 设置按钮
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          ),
           // 同步按钮
           Consumer<SyncProvider>(
             builder: (context, syncProvider, _) {
@@ -167,10 +193,7 @@ class HomePage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 同步状态提示
           const SyncStatusWidget(),
-          
-          // 主菜单
           Expanded(
             child: GridView.count(
               crossAxisCount: 2,
@@ -179,8 +202,8 @@ class HomePage extends StatelessWidget {
                 _buildMenuCard(
                   context,
                   icon: Icons.map,
-                  title: '道路巡查',
-                  subtitle: '轨迹记录',
+                  title: l10n.home_inspection,
+                  subtitle: l10n.home_inspectionSubtitle,
                   color: Colors.blue,
                   borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/inspection'),
@@ -188,8 +211,8 @@ class HomePage extends StatelessWidget {
                 _buildMenuCard(
                   context,
                   icon: Icons.camera_alt,
-                  title: '病害记录',
-                  subtitle: '拍照上报',
+                  title: l10n.home_defectRecord,
+                  subtitle: l10n.home_defectRecordSubtitle,
                   color: Colors.red,
                   borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/defect-record'),
@@ -197,8 +220,8 @@ class HomePage extends StatelessWidget {
                 _buildMenuCard(
                   context,
                   icon: Icons.build,
-                  title: '养护管理',
-                  subtitle: '任务分配',
+                  title: l10n.home_maintenance,
+                  subtitle: l10n.home_maintenanceSubtitle,
                   color: Colors.green,
                   borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/maintenance'),
@@ -206,8 +229,8 @@ class HomePage extends StatelessWidget {
                 _buildMenuCard(
                   context,
                   icon: Icons.bar_chart,
-                  title: '统计报表',
-                  subtitle: '数据分析',
+                  title: l10n.home_report,
+                  subtitle: l10n.home_reportSubtitle,
                   color: Colors.orange,
                   borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/report'),
