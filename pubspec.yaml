@@ -27,6 +27,7 @@ dependencies:
   location: ^5.0.3
   amap_flutter_location: ^3.0.0
   amap_flutter_map: ^3.0.0
+  amap_flutter_base: ^3.0.0
   
   # 后台任务
   workmanager: ^0.5.2
@@ -34,6 +35,15 @@ dependencies:
   
   # 权限
   permission_handler: ^11.2.0
+  
+  # 图片
+  image_picker: ^1.0.7
+  
+  # UUID
+  uuid: ^4.3.3
+  
+  # 图表
+  fl_chart: ^0.66.0
 
 dev_dependencies:
   flutter_test:
