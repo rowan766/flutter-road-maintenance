@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:io';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/road_defect.dart';
+import '../../../../core/providers/sync_provider.dart';
 
 class DefectRecordPage extends StatefulWidget {
   const DefectRecordPage({super.key});
@@ -100,14 +102,18 @@ class _DefectRecordPageState extends State<DefectRecordPage> {
       roadName: _roadNameController.text.isEmpty 
           ? null 
           : _roadNameController.text,
+      synced: false,  // 标记为未同步
     );
 
     final box = await Hive.openBox<RoadDefect>('defects');
     await box.add(defect);
 
+    // 刷新同步状态
     if (mounted) {
+      context.read<SyncProvider>().refreshUnsyncedCount();
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('病害记录已保存')),
+        const SnackBar(content: Text('病害记录已保存，将在有网络时自动同步')),
       );
       Navigator.pop(context);
     }
