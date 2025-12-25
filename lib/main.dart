@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/sync_provider.dart';
+import 'core/platform/platform_detector.dart';
+import 'core/platform/platform_adapter.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/inspection/presentation/pages/inspection_page.dart';
@@ -17,6 +19,10 @@ import 'shared/widgets/sync_status_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 打印平台信息（调试用）
+  PlatformDetector.printInfo();
+  PlatformAdapter().printAdapterInfo();
   
   // 初始化Hive
   await Hive.initFlutter();
@@ -74,9 +80,31 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 获取平台适配的UI配置
+    final uiConfig = PlatformAdapter().getUIConfig();
+    final borderRadius = uiConfig['borderRadius'] ?? 8.0;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('公路养护'),
+        title: Row(
+          children: [
+            const Text('公路养护'),
+            // 显示平台标识（调试用）
+            if (PlatformDetector.isHarmonyOS)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'HarmonyOS',
+                  style: TextStyle(fontSize: 10, color: Colors.white),
+                ),
+              ),
+          ],
+        ),
         actions: [
           // 同步按钮
           Consumer<SyncProvider>(
@@ -154,6 +182,7 @@ class HomePage extends StatelessWidget {
                   title: '道路巡查',
                   subtitle: '轨迹记录',
                   color: Colors.blue,
+                  borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/inspection'),
                 ),
                 _buildMenuCard(
@@ -162,6 +191,7 @@ class HomePage extends StatelessWidget {
                   title: '病害记录',
                   subtitle: '拍照上报',
                   color: Colors.red,
+                  borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/defect-record'),
                 ),
                 _buildMenuCard(
@@ -170,6 +200,7 @@ class HomePage extends StatelessWidget {
                   title: '养护管理',
                   subtitle: '任务分配',
                   color: Colors.green,
+                  borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/maintenance'),
                 ),
                 _buildMenuCard(
@@ -178,6 +209,7 @@ class HomePage extends StatelessWidget {
                   title: '统计报表',
                   subtitle: '数据分析',
                   color: Colors.orange,
+                  borderRadius: borderRadius,
                   onTap: () => Navigator.pushNamed(context, '/report'),
                 ),
               ],
@@ -194,12 +226,17 @@ class HomePage extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
+    required double borderRadius,
     required VoidCallback onTap,
   }) {
     return Card(
       elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(borderRadius),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
